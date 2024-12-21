@@ -14,26 +14,33 @@ license = {text = "MIT"}
 QMDown = "QMDown.cli:app"
 
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.pdm]
-distribution = true
+[tool.uv]
+package = true
 
-[tool.pdm.build]
-includes = ["QMDown"]
-
-[tool.pdm.version]
-source = "file"
+[tool.hatch.version]
 path = "QMDown/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["QMDown"]
+
+[tool.commitizen]
+name = "cz_gitmoji"
+
+[tool.basedpyright]
+venvPath = "."
+venv = ".venv"
+include = ["QMDown"]
+exclude = ["tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
 
 [tool.ruff]
 line-length = 120
 target-version = "py310"
 
-[tool.ruff.format]
-docstring-code-format = true
-
 [tool.ruff.lint]
-extend-select = ["Q", "RUF100", "UP", "I", "T"]
+extend-select = ["Q", "RUF", "C90", "UP", "I", "ASYNC", "C4", "FURB", "R"]
 pydocstyle = { convention = "google" }
