@@ -1,16 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices"
+    "config:recommended",
+    "gitmoji"
   ],
+  "unicodeEmoji": true,
   "labels": [
     "dependencies"
   ],
-  "enabledManagers": [
-    "pep723",
-    "pep621"
-  ],
   "lockFileMaintenance": {
+    "enabled": true
+  },
+  "pre-commit": {
     "enabled": true
   }
 }
