@@ -328,16 +328,16 @@ requires-dist = [
 
 [[package]]
 name = "qqmusic-api-python"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "httpx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/c3/46f82b0ca55132312617ac9a9e666031907a7bd17fbb70e82072205d201b/qqmusic_api_python-0.2.0.tar.gz", hash = "sha256:fc92587b02a631071f2f1cd1956bc71dc03cb84f59707c4c81570a348dc6392c", size = 37650 }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/ef/bd89205e6752afd8e02b5944032b6124289454421ac345aa18f4932c579d/qqmusic_api_python-0.2.1.tar.gz", hash = "sha256:55838c0ea0cd07892ef8ec592aaa1f912ad1cb3347243c77757ec25db9b5697b", size = 37534 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/de/f3bfed0887a539ea2b2f389032b092e735590c8a525d37bdac2de0584eea/qqmusic_api_python-0.2.0-py3-none-any.whl", hash = "sha256:65c9fb0ca6a86fd8b2f00f897674648ba9335dd406890b13fa19c0e9895a43d6", size = 46694 },
+    { url = "https://files.pythonhosted.org/packages/b9/ac/2d4c9305d858c073a8e8a3557d8e433ba44f4df73efdf2a524fa4a3add69/qqmusic_api_python-0.2.1-py3-none-any.whl", hash = "sha256:ed1947d4c7a951ec8c95bcda0b027ed15b2504c5fda50875fc668f3c99965e7e", size = 46540 },
 ]
 
 [[package]]
