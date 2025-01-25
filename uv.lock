@@ -273,16 +273,16 @@ wheels = [
 
 [[package]]
 name = "pydantic"
-version = "2.10.5"
+version = "2.10.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "pydantic-core" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/c7/ca334c2ef6f2e046b1144fe4bb2a5da8a4c574e7f2ebf7e16b34a6a2fa92/pydantic-2.10.5.tar.gz", hash = "sha256:278b38dbbaec562011d659ee05f63346951b3a248a6f3642e1bc68894ea2b4ff", size = 761287 }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/ae/d5220c5c52b158b1de7ca89fc5edb72f304a70a4c540c84c8844bf4008de/pydantic-2.10.6.tar.gz", hash = "sha256:ca5daa827cce33de7a42be142548b0096bf05a7e7b365aebfa5f8eeec7128236", size = 761681 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/26/82663c79010b28eddf29dcdd0ea723439535fa917fce5905885c0e9ba562/pydantic-2.10.5-py3-none-any.whl", hash = "sha256:4dd4e322dbe55472cb7ca7e73f4b63574eecccf2835ffa2af9021ce113c83c53", size = 431426 },
+    { url = "https://files.pythonhosted.org/packages/f4/3c/8cc1cc84deffa6e25d2d0c688ebb80635dfdbf1dbea3e30c541c8cf4d860/pydantic-2.10.6-py3-none-any.whl", hash = "sha256:427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584", size = 431696 },
 ]
 
 [[package]]
@@ -396,16 +396,16 @@ dev = []
 
 [[package]]
 name = "qqmusic-api-python"
-version = "0.2.1"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "httpx" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/ef/bd89205e6752afd8e02b5944032b6124289454421ac345aa18f4932c579d/qqmusic_api_python-0.2.1.tar.gz", hash = "sha256:55838c0ea0cd07892ef8ec592aaa1f912ad1cb3347243c77757ec25db9b5697b", size = 37534 }
+sdist = { url = "https://files.pythonhosted.org/packages/53/b5/d66b69353b9e56c9c6f8ac3190b2176527b59ed623e1270d4d43078f2831/qqmusic_api_python-0.2.2.tar.gz", hash = "sha256:834623e1f7b0b1d159e62983d6bcb78973ba4ba82e6ceee62ab39cd13efef6bf", size = 37556 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/ac/2d4c9305d858c073a8e8a3557d8e433ba44f4df73efdf2a524fa4a3add69/qqmusic_api_python-0.2.1-py3-none-any.whl", hash = "sha256:ed1947d4c7a951ec8c95bcda0b027ed15b2504c5fda50875fc668f3c99965e7e", size = 46540 },
+    { url = "https://files.pythonhosted.org/packages/68/78/9fce73c81e560b6e10c237110d5df30eee1e36bc1a096c2325c7b898f7a4/qqmusic_api_python-0.2.2-py3-none-any.whl", hash = "sha256:3cb840d1cb60c8f39831aec4f5f1a8a1d8ef8f97249e146804bd695b0246aaed", size = 46556 },
 ]
 
 [[package]]
