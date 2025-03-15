@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 __version__ = "0.2.3"
+__prog_name__ = "QMDown"
 
 console = Console()
 

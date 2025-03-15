@@ -10,14 +10,15 @@ from rich.table import Table
 from typer import rich_utils
 
 from QMDown import __version__, console
-from QMDown.extractor import AlbumExtractor, SingerExtractor, SongExtractor, SonglistExtractor, ToplistExtractor
-from QMDown.model import Song, SongData
-from QMDown.processor.downloader import AsyncDownloader
-from QMDown.processor.handler import handle_cover, handle_login, handle_lyric, handle_metadata, handle_song_urls
-from QMDown.utils import cache
 from QMDown.utils.async_typer import AsyncTyper
 from QMDown.utils.priority import SongFileTypePriority
-from QMDown.utils.utils import get_real_url
+from settings import (
+    QMDownBasicSettings,
+    QMDownLoginSettings,
+    QMDownLyricSettings,
+    QMDownMetadataSettings,
+    QMDownSettings,
+)
 
 app = AsyncTyper(
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -96,7 +97,6 @@ def print_params(ctx: typer.Context):
 
 @app.command()
 async def cli(
-    ctx: typer.Context,
     urls: Annotated[
         list[str],
         typer.Argument(
@@ -309,146 +309,174 @@ async def cli(
     """
     QQ 音乐解析/下载工具
     """
-    print_params(ctx)
-
-    await cache.clean_caches()
-
-    if (cookies, login, load).count(None) < 1:
-        raise typer.BadParameter("选项 '--credential' , '--login' 或 '--load' 不能共用")
-
-    # 登录
-    credential = await handle_login(cookies, login, load, save)
-
-    data = await get_song_data(urls, int(quality), credential)
-
-    if len(data) == 0:
-        raise typer.Exit()
-
-    logging.info(f"[blue][歌曲][/] 开始下载 总共 {len(data)} 首")
-
-    downloader = AsyncDownloader(
-        save_dir=output,
-        num_workers=num_workers,
-        no_progress=no_progress,
-        overwrite=overwrite,
-        timeout=timeout,
-        retries=max_retries,
+    settings = QMDownSettings(
+        basic=QMDownBasicSettings(
+            num_workers=num_workers,
+            quality=quality,
+            overwrite=overwrite,
+            max_retries=max_retries,
+            timeout=timeout,
+        ),
+        login=QMDownLoginSettings(
+            cookies=cookies,
+            login=login,
+            load=load,
+            save=save,
+        ),
+        lyric=QMDownLyricSettings(
+            enabled=lyric,
+            trans=trans,
+            roma=roma,
+            embed_lyric=not no_embed_lyric,
+            del_lyric=not no_del_lyric,
+        ),
+        metadata=QMDownMetadataSettings(
+            enabled=not no_metadata,
+            embed_cover=not no_cover,
+        ),
     )
 
-    for song in data:
-        if song.url:
-            song.path = await downloader.add_task(
-                url=song.url.url,
-                file_name=song.info.get_full_name(),
-                file_suffix=song.url.type.e,
-            )
 
-    await downloader.execute_tasks()
+#     print_params(ctx)
 
-    logging.info("[blue][歌曲][green] 下载完成")
+#     await cache.clean_caches()
 
-    if not no_metadata:
-        await handle_metadata(data)
+#     if (cookies, login, load).count(None) < 1:
+#         raise typer.BadParameter("选项 '--credential' , '--login' 或 '--load' 不能共用")
 
-    if not no_cover:
-        downloader.no_progress = True
-        await handle_cover(data, downloader)
+#     # 登录
+#     credential = await handle_login(cookies, login, load, save)
 
-    if lyric:
-        await handle_lyric(data, output, no_embed_lyric, no_del_lyric, num_workers, overwrite, trans, roma)
+#     data = await get_song_data(urls, int(quality), credential)
 
+#     if len(data) == 0:
+#         raise typer.Exit()
 
-async def get_song_data(urls: list[str], max_quality: int, credential: Credential | None) -> list[SongData]:
-    extractors = [SongExtractor(), SonglistExtractor(), AlbumExtractor(), ToplistExtractor(), SingerExtractor()]
-    song_data: list[Song] = []
+#     logging.info(f"[blue][歌曲][/] 开始下载 总共 {len(data)} 首")
 
-    with console.status("解析链接中..."):
-        for url in urls:
-            # 获取真实链接(如果适用)
-            original_url = url
-            if "c6.y.qq.com/base/fcgi-bin" in url:
-                url = await get_real_url(url) or url
-                if url == original_url:
-                    logging.info(f"[blue][Extractor][/] 获取真实链接失败: {original_url}")
-                    continue
-                logging.info(f"[blue][Extractor][/] {original_url} -> {url}")
+#     downloader = AsyncDownloader(
+#         save_dir=output,
+#         num_workers=num_workers,
+#         no_progress=no_progress,
+#         overwrite=overwrite,
+#         timeout=timeout,
+#         retries=max_retries,
+#     )
 
-            # 尝试用提取器解析链接
-            for extractor in extractors:
-                if extractor.suitable(url):
-                    try:
-                        songs = await extractor.extract(url)
-                        if isinstance(songs, list):
-                            song_data.extend(songs)
-                        else:
-                            song_data.append(songs)
-                    except Exception as e:
-                        logging.error(f"[blue bold][{extractor.__class__.__name__}][/] {e}", exc_info=True)
-                    break
-            else:
-                logging.info(f"Not Supported: {url}")
-    # 歌曲去重
-    song_data = await deduplicate_songs(song_data)
+#     for song in data:
+#         if song.url:
+#             song.path = await downloader.add_task(
+#                 url=song.url.url,
+#                 file_name=song.info.get_full_name(),
+#                 file_suffix=song.url.type.e,
+#             )
 
-    with console.status(f"[green]获取歌曲链接中[/] 共{len(song_data)}首..."):
-        if len(song_data) == 0:
-            raise typer.Exit()
+#     await downloader.execute_tasks()
 
-        # 获取歌曲链接
-        data = await handle_song_urls(song_data, max_quality, credential)
+#     logging.info("[blue][歌曲][green] 下载完成")
 
-        logging.info(f"[red]获取歌曲链接成功: {len(data)}/{len(song_data)}")
+#     if not no_metadata:
+#         await handle_metadata(data)
 
-        s_mids = [song.info.mid for song in data]
-        f_data = [song for song in song_data if song.mid not in s_mids]
-        if len(f_data) > 0:
-            logging.info(f"[red]获取歌曲链接失败: {[song.get_full_name() for song in f_data]}")
+#     if not no_cover:
+#         downloader.no_progress = True
+#         await handle_cover(data, downloader)
 
-    return data
+#     if lyric:
+#         await handle_lyric(data, output, no_embed_lyric, no_del_lyric, num_workers, overwrite, trans, roma)
 
 
-async def deduplicate_songs(data: list[Song]) -> list[Song]:
-    data = list({song.mid: song for song in data}.values())
-    names: dict[str, list[Song]] = {}
+# async def get_song_data(urls: list[str], max_quality: int, credential: Credential | None) -> list[SongData]:
+#     extractors = [SongExtractor(), SonglistExtractor(), AlbumExtractor(), ToplistExtractor(), SingerExtractor()]
+#     song_data: list[Song] = []
 
-    for song in data:
-        full_name = song.get_full_name()
-        names.setdefault(full_name, []).append(song)
+#     with console.status("解析链接中..."):
+#         for url in urls:
+#             # 获取真实链接(如果适用)
+#             original_url = url
+#             if "c6.y.qq.com/base/fcgi-bin" in url:
+#                 url = await get_real_url(url) or url
+#                 if url == original_url:
+#                     logging.info(f"[blue][Extractor][/] 获取真实链接失败: {original_url}")
+#                     continue
+#                 logging.info(f"[blue][Extractor][/] {original_url} -> {url}")
 
-    for name, songs in names.items():
-        if len(songs) > 1:
-            table = Table(box=None)
-            table.add_column("序号", style="bold blue")
-            table.add_column("标题")
-            table.add_column("歌手")
-            table.add_column("专辑", style="bold red")
+#             # 尝试用提取器解析链接
+#             for extractor in extractors:
+#                 if extractor.suitable(url):
+#                     try:
+#                         songs = await extractor.extract(url)
+#                         if isinstance(songs, list):
+#                             song_data.extend(songs)
+#                         else:
+#                             song_data.append(songs)
+#                     except Exception as e:
+#                         logging.error(f"[blue bold][{extractor.__class__.__name__}][/] {e}", exc_info=True)
+#                     break
+#             else:
+#                 logging.info(f"Not Supported: {url}")
+#     # 歌曲去重
+#     song_data = await deduplicate_songs(song_data)
 
-            for idx, song in enumerate(songs, 1):
-                table.add_row(str(idx), song.title, song.singer_to_str(), song.album.title)
+#     with console.status(f"[green]获取歌曲链接中[/] 共{len(song_data)}首..."):
+#         if len(song_data) == 0:
+#             raise typer.Exit()
 
-            console.print(f"\n以下是不同版本的[cyan]{name}\n", table, "")
+#         # 获取歌曲链接
+#         data = await handle_song_urls(song_data, max_quality, credential)
 
-            while True:
-                indexs = typer.prompt(
-                    "请输入要下载的序号(多个序号用空格分隔,回车全部下载)",
-                    type=list[int],
-                    value_proc=lambda x: [int(i) - 1 for i in x.split() if i.isdigit() and 1 <= int(i) <= len(songs)],
-                    default=" ".join(map(str, range(1, len(songs) + 1))),
-                )
-                if indexs:
-                    break
-                console.print("[red]请输入正确的序号!")
+#         logging.info(f"[red]获取歌曲链接成功: {len(data)}/{len(song_data)}")
 
-            selected_songs = [songs[i] for i in indexs]
+#         s_mids = [song.info.mid for song in data]
+#         f_data = [song for song in song_data if song.mid not in s_mids]
+#         if len(f_data) > 0:
+#             logging.info(f"[red]获取歌曲链接失败: {[song.get_full_name() for song in f_data]}")
 
-            if len(songs) > 1:
-                for song in selected_songs:
-                    song.title = f"{song.name} [{song.album.name}]"
-
-            names[name] = selected_songs
-
-    return [song for group in names.values() for song in group]
+#     return data
 
 
-if __name__ == "__main__":
-    app()
+# async def deduplicate_songs(data: list[Song]) -> list[Song]:
+#     data = list({song.mid: song for song in data}.values())
+#     names: dict[str, list[Song]] = {}
+
+#     for song in data:
+#         full_name = song.get_full_name()
+#         names.setdefault(full_name, []).append(song)
+
+#     for name, songs in names.items():
+#         if len(songs) > 1:
+#             table = Table(box=None)
+#             table.add_column("序号", style="bold blue")
+#             table.add_column("标题")
+#             table.add_column("歌手")
+#             table.add_column("专辑", style="bold red")
+
+#             for idx, song in enumerate(songs, 1):
+#                 table.add_row(str(idx), song.title, song.singer_to_str(), song.album.title)
+
+#             console.print(f"\n以下是不同版本的[cyan]{name}\n", table, "")
+
+#             while True:
+#                 indexs = typer.prompt(
+#                     "请输入要下载的序号(多个序号用空格分隔,回车全部下载)",
+#                     type=list[int],
+#                     value_proc=lambda x: [int(i) - 1 for i in x.split() if i.isdigit() and 1 <= int(i) <= len(songs)],
+#                     default=" ".join(map(str, range(1, len(songs) + 1))),
+#                 )
+#                 if indexs:
+#                     break
+#                 console.print("[red]请输入正确的序号!")
+
+#             selected_songs = [songs[i] for i in indexs]
+
+#             if len(songs) > 1:
+#                 for song in selected_songs:
+#                     song.title = f"{song.name} [{song.album.name}]"
+
+#             names[name] = selected_songs
+
+#     return [song for group in names.values() for song in group]
+
+
+# if __name__ == "__main__":
+#     app()
