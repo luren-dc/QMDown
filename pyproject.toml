@@ -30,6 +30,10 @@ build-backend = "hatchling.build"
 [tool.uv]
 package = true
 
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true
+
 [tool.hatch.version]
 path = "QMDown/__init__.py"
 

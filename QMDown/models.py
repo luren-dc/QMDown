@@ -4,11 +4,20 @@ from typing import Annotated
 
 from pydantic import AliasChoices, AliasPath, BaseModel, BeforeValidator, Field, model_validator
 from qqmusic_api.song import SongFileType
-
-from QMDown.utils.lrcparser import LrcParser
+from rich.progress import TaskID
 
 PublicTimeField = AliasChoices("time_public", "pub_time", "publishDate")
 PublicTime = Annotated[date | None, BeforeValidator(lambda value: None if not value else value)]
+
+
+class DownloadTask(BaseModel):
+    """下载任务"""
+
+    id: TaskID
+    url: str
+    file_name: str
+    file_suffix: str
+    full_path: Path
 
 
 class Singer(BaseModel):
@@ -45,8 +54,8 @@ class FileInfo(BaseModel):
     size_48aac: int
     size_96aac: int
     size_192ogg: int
-    size_320ogg: int = Field(validation_alias=AliasPath("size_new", 3))
-    size_640ogg: int = Field(validation_alias=AliasPath("size_new", 5))
+    size_320ogg: int = Field(0, validation_alias=AliasPath("size_new", 3))
+    size_640ogg: int = Field(0, validation_alias=AliasPath("size_new", 5))
     size_192aac: int
     size_128mp3: int
     size_320mp3: int
@@ -62,9 +71,9 @@ class FileInfo(BaseModel):
     size_360ra: list[int]
     size_dolby: int
     size_new: list[int]
-    size_master: int = Field(validation_alias=AliasPath("size_new", 0))
-    size_atmos_2: int = Field(validation_alias=AliasPath("size_new", 1))
-    size_atmos_51: int = Field(validation_alias=AliasPath("size_new", 2))
+    size_master: int = Field(0, validation_alias=AliasPath("size_new", 0))
+    size_atmos_2: int = Field(0, validation_alias=AliasPath("size_new", 1))
+    size_atmos_51: int = Field(0, validation_alias=AliasPath("size_new", 2))
 
 
 class Song(BaseModel):
@@ -82,7 +91,7 @@ class Song(BaseModel):
     index_cd: int | None = None
     index_album: int | None = None
     time_public: PublicTime = None
-    try_mid: str | None = Field(None, validation_alias=AliasPath("vs", 0))
+    vs: list[str]
 
     def singer_to_str(self, sep: str = ",") -> str:
         return sep.join([s.name for s in self.singer])
@@ -134,13 +143,17 @@ class AlbumDetial(BaseModel):
         return sep.join([s.name for s in self.singer])
 
 
-class SonglistDetail(BaseModel):
+class DirInfo(BaseModel):
     id: int
     dirid: int
     title: str
     songnum: int
     host_uin: int
     host_nick: str
+
+
+class SonglistDetail(BaseModel):
+    info: DirInfo
     songs: list[Song]
 
 
@@ -148,20 +161,6 @@ class Lyric(BaseModel):
     lyric: str
     trans: str
     roma: str
-
-    def get_parser(self) -> LrcParser:
-        parser = LrcParser(self.lyric)
-        parser.parse_lrc(self.trans)
-        parser.parse_lrc(self.roma)
-        return parser
-
-
-class SongData(BaseModel):
-    info: Song
-    path: Path | None = None
-    url: SongUrl | None = None
-    cover: Path | None = None
-    lyric: Path | None = None
 
 
 class ToplistDetail(BaseModel):

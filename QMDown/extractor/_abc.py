@@ -3,9 +3,9 @@ import re
 from abc import ABC, abstractmethod
 
 from QMDown import console
-from QMDown.model import Song
+from QMDown.models import Song
 
-logger = logging.getLogger("QMDown.extractor")
+logger = logging.getLogger("extractor")
 
 
 class Extractor(ABC):

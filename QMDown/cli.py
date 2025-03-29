@@ -5,20 +5,22 @@ from typing import Annotated
 
 import click
 import typer
-from qqmusic_api import Credential
+from rich.logging import RichHandler
 from rich.table import Table
 from typer import rich_utils
 
 from QMDown import __version__, console
-from QMDown.utils.async_typer import AsyncTyper
-from QMDown.utils.priority import SongFileTypePriority
-from settings import (
+from QMDown.handler import DownloadHandler, LoginHandler, MetaDataHandler, ParseUrlHandler
+from QMDown.handler._abc import Context
+from QMDown.settings import (
     QMDownBasicSettings,
     QMDownLoginSettings,
     QMDownLyricSettings,
     QMDownMetadataSettings,
     QMDownSettings,
 )
+from QMDown.utils.async_typer import AsyncTyper
+from QMDown.utils.priority import SongFileTypePriority
 
 app = AsyncTyper(
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -50,20 +52,26 @@ def handle_no_color(value: bool):
 
 
 def handle_debug(value: bool):
-    if value:
-        logging.getLogger().setLevel(logging.DEBUG)
-
-
-def parse_cookies(value: str | None) -> Credential | None:
-    if value:
-        if ":" in value:
-            data = value.split(":")
-            return Credential(
-                musicid=int(data[0]),
-                musickey=data[1],
+    logging.basicConfig(
+        level="DEBUG" if value else "INFO",
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[
+            RichHandler(
+                show_path=False,
+                markup=True,
+                rich_tracebacks=True,
+                console=console,
             )
-        raise typer.BadParameter("格式错误,将'musicid'与'musickey'使用':'连接")
-    return None
+        ],
+    )
+
+
+def callback_cookies(value: str | None):
+    if value:
+        if ":" not in value:
+            raise typer.BadParameter("格式错误, 正确格式:'musicid(uin):musickey(qqmusic_key)'")
+    return value
 
 
 def print_params(ctx: typer.Context):
@@ -97,10 +105,11 @@ def print_params(ctx: typer.Context):
 
 @app.command()
 async def cli(
+    ctx: typer.Context,
     urls: Annotated[
         list[str],
         typer.Argument(
-            help="QQ 音乐链接 \n支持多个链接,可带有其他文本,会自动提取",
+            help="支持多个链接,可混杂其他文本",
             show_default=False,
             callback=search_url,
         ),
@@ -113,7 +122,7 @@ async def cli(
             help="下载文件存储目录",
             resolve_path=True,
             file_okay=False,
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
         ),
     ] = Path.cwd(),
     num_workers: Annotated[
@@ -122,7 +131,7 @@ async def cli(
             "-n",
             "--num-workers",
             help="并发下载协程数量",
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
             min=1,
         ),
     ] = 8,
@@ -133,18 +142,19 @@ async def cli(
             "--quality",
             help="首选音频品质",
             click_type=click.Choice(
-                [str(_.value) for _ in SongFileTypePriority],
+                [str(_.name) for _ in SongFileTypePriority],
+                case_sensitive=False,
             ),
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
         ),
-    ] = str(SongFileTypePriority.MP3_128.value),
+    ] = SongFileTypePriority.MP3_128.name,
     overwrite: Annotated[
         bool,
         typer.Option(
             "-w",
             "--overwrite",
             help="覆盖已存在文件",
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
         ),
     ] = False,
     max_retries: Annotated[
@@ -153,7 +163,7 @@ async def cli(
             "-r",
             "--max-retries",
             help="下载失败重试次数",
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
             min=0,
         ),
     ] = 3,
@@ -163,7 +173,7 @@ async def cli(
             "-t",
             "--timeout",
             help="下载超时时间",
-            rich_help_panel="[blue bold]Download[/] [green bold]下载",
+            rich_help_panel="Download 下载",
             min=0,
         ),
     ] = 15,
@@ -171,24 +181,24 @@ async def cli(
         bool,
         typer.Option(
             "--lyric",
-            help="下载原始歌词文件",
-            rich_help_panel="[blue bold]Lyric[/] [green bold]歌词",
+            help="启用下载歌词功能",
+            rich_help_panel="Lyric 歌词",
         ),
     ] = False,
     trans: Annotated[
         bool,
         typer.Option(
             "--trans",
-            help="下载双语翻译歌词(需配合`--lyric`使用)",
-            rich_help_panel="[blue bold]Lyric[/] [green bold]歌词",
+            help="下载双语翻译歌词",
+            rich_help_panel="Lyric 歌词",
         ),
     ] = False,
     roma: Annotated[
         bool,
         typer.Option(
             "--roma",
-            help="下载罗马音歌词(需配合`--lyric`使用)",
-            rich_help_panel="[blue bold]Lyric[/] [green bold]歌词",
+            help="下载罗马音歌词",
+            rich_help_panel="Lyric 歌词",
         ),
     ] = False,
     no_embed_lyric: Annotated[
@@ -196,15 +206,15 @@ async def cli(
         typer.Option(
             "--no-embed-lyric",
             help="禁用歌词文件嵌入",
-            rich_help_panel="[blue bold]Lyric[/] [green bold]歌词",
+            rich_help_panel="Lyric 歌词",
         ),
     ] = False,
     no_del_lyric: Annotated[
         bool,
         typer.Option(
             "--no-del-lyric",
-            help="禁用嵌入歌词文件后删除",
-            rich_help_panel="[blue bold]Lyric[/] [green bold]歌词",
+            help="禁用清除已嵌入歌词文件",
+            rich_help_panel="Lyric 歌词",
         ),
     ] = False,
     no_metadata: Annotated[
@@ -212,7 +222,7 @@ async def cli(
         typer.Option(
             "--no-metadata",
             help="禁用元数据添加",
-            rich_help_panel="[blue bold]Metadata[/] [green bold]元数据",
+            rich_help_panel="Metadata 元数据",
         ),
     ] = False,
     no_cover: Annotated[
@@ -220,7 +230,7 @@ async def cli(
         typer.Option(
             "--no-cover",
             help="禁用专辑封面嵌入",
-            rich_help_panel="[blue bold]Metadata[/] [green bold]元数据",
+            rich_help_panel="Metadata 元数据",
         ),
     ] = False,
     cookies: Annotated[
@@ -228,10 +238,11 @@ async def cli(
         typer.Option(
             "-c",
             "--cookies",
-            help="QQ音乐Cookie凭证(从浏览器开发者工具获取 `musicid` 和 `musickey`,拼接为 `musicid:musickey` 格式)",
-            metavar="MUSICID:MUSICKEY",
+            help="Cookies 凭证",
+            metavar="UIN:QQMUSIC_KEY",
             show_default=False,
-            rich_help_panel="[blue bold]Authentication[/] [green bold]认证管理",
+            rich_help_panel="Authentication 认证管理",
+            callback=callback_cookies,
         ),
     ] = None,
     login: Annotated[
@@ -243,7 +254,7 @@ async def cli(
                 ["QQ", "WX", "PHONE"],
                 case_sensitive=False,
             ),
-            rich_help_panel="[blue bold]Authentication[/] [green bold]认证管理",
+            rich_help_panel="Authentication 认证管理",
             show_default=False,
         ),
     ] = None,
@@ -252,9 +263,10 @@ async def cli(
         typer.Option(
             "--load",
             help="加载 Cookies 文件路径",
-            rich_help_panel="[blue bold]Authentication[/] [green bold]认证管理",
+            rich_help_panel="Authentication 认证管理",
             resolve_path=True,
             dir_okay=False,
+            exists=True,
             show_default=False,
         ),
     ] = None,
@@ -263,7 +275,7 @@ async def cli(
         typer.Option(
             "--save",
             help="持久化 Cookies 文件路径",
-            rich_help_panel="[blue bold]Authentication[/] [green bold]认证管理",
+            rich_help_panel="Authentication 认证管理",
             resolve_path=True,
             dir_okay=False,
             writable=True,
@@ -287,16 +299,16 @@ async def cli(
         ),
     ] = False,
     debug: Annotated[
-        bool | None,
+        bool,
         typer.Option(
             "--debug",
             help="启用调试日志输出",
             is_eager=True,
             callback=handle_debug,
         ),
-    ] = None,
+    ] = False,
     version: Annotated[
-        bool | None,
+        bool,
         typer.Option(
             "-v",
             "--version",
@@ -304,24 +316,36 @@ async def cli(
             is_eager=True,
             callback=handle_version,
         ),
-    ] = None,
+    ] = False,
 ):
     """
     QQ 音乐解析/下载工具
     """
+    if (cookies, login, load).count(None) < 1:
+        raise typer.BadParameter("选项 '--credential' , '--login' 或 '--load' 不能共用")
+
+    if not urls:
+        raise typer.BadParameter("未获取到有效链接")
+
+    print_params(ctx)
+
     settings = QMDownSettings(
         basic=QMDownBasicSettings(
             num_workers=num_workers,
-            quality=quality,
             overwrite=overwrite,
             max_retries=max_retries,
+            output=output,
             timeout=timeout,
+            quality=SongFileTypePriority[quality].value,
+            debug=bool(debug),
+            no_color=bool(no_color),
+            no_progress=no_progress,
         ),
         login=QMDownLoginSettings(
             cookies=cookies,
-            login=login,
-            load=load,
-            save=save,
+            login_type=login,
+            load_path=load,
+            save_path=save or load,
         ),
         lyric=QMDownLyricSettings(
             enabled=lyric,
@@ -336,147 +360,10 @@ async def cli(
         ),
     )
 
-
-#     print_params(ctx)
-
-#     await cache.clean_caches()
-
-#     if (cookies, login, load).count(None) < 1:
-#         raise typer.BadParameter("选项 '--credential' , '--login' 或 '--load' 不能共用")
-
-#     # 登录
-#     credential = await handle_login(cookies, login, load, save)
-
-#     data = await get_song_data(urls, int(quality), credential)
-
-#     if len(data) == 0:
-#         raise typer.Exit()
-
-#     logging.info(f"[blue][歌曲][/] 开始下载 总共 {len(data)} 首")
-
-#     downloader = AsyncDownloader(
-#         save_dir=output,
-#         num_workers=num_workers,
-#         no_progress=no_progress,
-#         overwrite=overwrite,
-#         timeout=timeout,
-#         retries=max_retries,
-#     )
-
-#     for song in data:
-#         if song.url:
-#             song.path = await downloader.add_task(
-#                 url=song.url.url,
-#                 file_name=song.info.get_full_name(),
-#                 file_suffix=song.url.type.e,
-#             )
-
-#     await downloader.execute_tasks()
-
-#     logging.info("[blue][歌曲][green] 下载完成")
-
-#     if not no_metadata:
-#         await handle_metadata(data)
-
-#     if not no_cover:
-#         downloader.no_progress = True
-#         await handle_cover(data, downloader)
-
-#     if lyric:
-#         await handle_lyric(data, output, no_embed_lyric, no_del_lyric, num_workers, overwrite, trans, roma)
+    handler = LoginHandler()
+    handler.set_next(ParseUrlHandler()).set_next(DownloadHandler()).set_next(MetaDataHandler())
+    await handler.handle(Context(urls=urls, settings=settings))
 
 
-# async def get_song_data(urls: list[str], max_quality: int, credential: Credential | None) -> list[SongData]:
-#     extractors = [SongExtractor(), SonglistExtractor(), AlbumExtractor(), ToplistExtractor(), SingerExtractor()]
-#     song_data: list[Song] = []
-
-#     with console.status("解析链接中..."):
-#         for url in urls:
-#             # 获取真实链接(如果适用)
-#             original_url = url
-#             if "c6.y.qq.com/base/fcgi-bin" in url:
-#                 url = await get_real_url(url) or url
-#                 if url == original_url:
-#                     logging.info(f"[blue][Extractor][/] 获取真实链接失败: {original_url}")
-#                     continue
-#                 logging.info(f"[blue][Extractor][/] {original_url} -> {url}")
-
-#             # 尝试用提取器解析链接
-#             for extractor in extractors:
-#                 if extractor.suitable(url):
-#                     try:
-#                         songs = await extractor.extract(url)
-#                         if isinstance(songs, list):
-#                             song_data.extend(songs)
-#                         else:
-#                             song_data.append(songs)
-#                     except Exception as e:
-#                         logging.error(f"[blue bold][{extractor.__class__.__name__}][/] {e}", exc_info=True)
-#                     break
-#             else:
-#                 logging.info(f"Not Supported: {url}")
-#     # 歌曲去重
-#     song_data = await deduplicate_songs(song_data)
-
-#     with console.status(f"[green]获取歌曲链接中[/] 共{len(song_data)}首..."):
-#         if len(song_data) == 0:
-#             raise typer.Exit()
-
-#         # 获取歌曲链接
-#         data = await handle_song_urls(song_data, max_quality, credential)
-
-#         logging.info(f"[red]获取歌曲链接成功: {len(data)}/{len(song_data)}")
-
-#         s_mids = [song.info.mid for song in data]
-#         f_data = [song for song in song_data if song.mid not in s_mids]
-#         if len(f_data) > 0:
-#             logging.info(f"[red]获取歌曲链接失败: {[song.get_full_name() for song in f_data]}")
-
-#     return data
-
-
-# async def deduplicate_songs(data: list[Song]) -> list[Song]:
-#     data = list({song.mid: song for song in data}.values())
-#     names: dict[str, list[Song]] = {}
-
-#     for song in data:
-#         full_name = song.get_full_name()
-#         names.setdefault(full_name, []).append(song)
-
-#     for name, songs in names.items():
-#         if len(songs) > 1:
-#             table = Table(box=None)
-#             table.add_column("序号", style="bold blue")
-#             table.add_column("标题")
-#             table.add_column("歌手")
-#             table.add_column("专辑", style="bold red")
-
-#             for idx, song in enumerate(songs, 1):
-#                 table.add_row(str(idx), song.title, song.singer_to_str(), song.album.title)
-
-#             console.print(f"\n以下是不同版本的[cyan]{name}\n", table, "")
-
-#             while True:
-#                 indexs = typer.prompt(
-#                     "请输入要下载的序号(多个序号用空格分隔,回车全部下载)",
-#                     type=list[int],
-#                     value_proc=lambda x: [int(i) - 1 for i in x.split() if i.isdigit() and 1 <= int(i) <= len(songs)],
-#                     default=" ".join(map(str, range(1, len(songs) + 1))),
-#                 )
-#                 if indexs:
-#                     break
-#                 console.print("[red]请输入正确的序号!")
-
-#             selected_songs = [songs[i] for i in indexs]
-
-#             if len(songs) > 1:
-#                 for song in selected_songs:
-#                     song.title = f"{song.name} [{song.album.name}]"
-
-#             names[name] = selected_songs
-
-#     return [song for group in names.values() for song in group]
-
-
-# if __name__ == "__main__":
-#     app()
+if __name__ == "__main__":
+    app()

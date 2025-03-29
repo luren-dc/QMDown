@@ -493,7 +493,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "pydantic", specifier = ">=2.10.4" },
     { name = "pyzbar", specifier = ">=0.1.9" },
-    { name = "qqmusic-api-python", specifier = ">=0.1.10" },
+    { name = "qqmusic-api-python", specifier = ">=0.3.1" },
     { name = "qrcode", specifier = ">=8.0" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "typer", specifier = ">=0.13.0" },
@@ -504,7 +504,7 @@ dev = []
 
 [[package]]
 name = "qqmusic-api-python"
-version = "0.3.1"
+version = "0.3.3"
 source = { registry = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple" }
 dependencies = [
     { name = "aiocache" },
@@ -513,9 +513,9 @@ dependencies = [
     { name = "orjson" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/73/2a/9d8767e07765a219a3b7b40f13a0d4f9203e3e68d1861c344be8398affe9/qqmusic_api_python-0.3.1.tar.gz", hash = "sha256:18d5db40f64d7e99fa78f02750d4b30b8f2f18ed072d84b047b74981841ae64b", size = 34716 }
+sdist = { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/bb/1e/dedfbdbee2eb4cc2f5bdf8dea0c03f1725846b9d0c0b752ebaed9409fd9f/qqmusic_api_python-0.3.3.tar.gz", hash = "sha256:cb8eca1dc6cbc78bfebb0d47248ea5e525cbeba3d916e2148f2b5750b0ec7771", size = 35520 }
 wheels = [
-    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/a9/b1/289d76e7c1a5f79d276b2a5fb1fb1d1f18f774dfc048c48e80602b724eda/qqmusic_api_python-0.3.1-py3-none-any.whl", hash = "sha256:90b05947211d0b896592bf939ca549b68d0e5149dcaf9e3e62b409277143b78c", size = 38561 },
+    { url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/dd/e8/85b56237637bdabb5c61f9ff77274be65fbd51120b39a24d8137de9e9d6b/qqmusic_api_python-0.3.3-py3-none-any.whl", hash = "sha256:2fadf7e85e5c51564c07cad44ecc882068f69932b3f05504857a86d7c75822d9", size = 39493 },
 ]
 
 [[package]]

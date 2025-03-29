@@ -1,19 +1,15 @@
 from asyncio import Lock
 from typing import ClassVar
 
+from QMDown import console
 from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import BarColumn, DownloadColumn, Progress, SpinnerColumn, TaskID, TextColumn, TransferSpeedColumn
 from rich.table import Column
 
-from QMDown import console
-
 
 class DownloadProgress:
-    """
-    进度条管理
-    """
 
     DEFAULT_COLUMNS: ClassVar = {
         "description": TextColumn(
@@ -35,13 +31,13 @@ class DownloadProgress:
         )
         self._overall_progress = Progress(
             SpinnerColumn("moon"),
-            TextColumn("[green]{task.description} [blue]{task.completed}[/]/[blue]{task.total}"),
+            TextColumn("[green]{task.description} [blue]{task.completed}/{task.total}"),
             BarColumn(bar_width=None),
             expand=True,
             console=console,
         )
         self._overall_task_id = self._overall_progress.add_task(
-            "下载中",
+            "下载进度",
             visible=False,
         )
         self._live = Live(
@@ -51,35 +47,19 @@ class DownloadProgress:
             ),
             console=console,
             transient=True,
+            refresh_per_second=10,
         )
-
         self._progress_lock = Lock()
-        self._active_tasks = set()
-
-    @property
-    def tasks(self):
-        return self._download_progress.tasks
-
-    def start(self):
-        self._live.start()
-
-    def start_task(self, task_id):
-        self._download_progress.start_task(task_id)
-
-    def stop(self):
-        self._live.stop()
-
-    def stop_task(self, task_id):
-        self._download_progress.stop_task(task_id)
+        self._active_tasks: set[TaskID] = set()
 
     async def add_task(
         self,
         description: str,
+        filename: str = "",
         start: bool = True,
         total: float | None = 100.0,
         completed: int = 0,
         visible: bool = True,
-        filename: str = "",
     ) -> TaskID:
         async with self._progress_lock:
             task_id = self._download_progress.add_task(
@@ -91,12 +71,8 @@ class DownloadProgress:
                 filename=filename,
             )
             self._active_tasks.add(task_id)
-            self._overall_progress.update(
-                self._overall_task_id,
-                total=len(self.tasks),
-                visible=True,
-            )
-        return task_id
+            self._update_overall_progress()
+            return task_id
 
     async def update(
         self,
@@ -106,33 +82,34 @@ class DownloadProgress:
         advance: float | None = None,
         description: str | None = None,
         visible: bool = True,
-        refresh: bool = False,
-        filename: str | None = None,
     ) -> None:
         async with self._progress_lock:
-            update_params = {
+            update_kwargs = {
                 "total": total,
                 "completed": completed,
-                "visible": visible,
-                "refresh": refresh,
-                "advance": advance,
+                "advance": advance or 0,
                 "description": description,
+                "visible": visible,
             }
-            if filename:
-                update_params["filename"] = filename
+            
+            self._download_progress.update(task_id, **update_kwargs)
+            
+            if self._download_progress.tasks[task_id].finished:
+                self._active_tasks.discard(task_id)
+                self._update_overall_progress()
 
-            self._download_progress.update(task_id, **update_params)
-
-            if self._download_progress.tasks[task_id].finished and task_id in self._active_tasks:
-                self._active_tasks.remove(task_id)
-                self._overall_progress.advance(self._overall_task_id)
-
-                if len(self._active_tasks) == 0:
-                    self._overall_progress.update(self._overall_task_id, description="[green]下载完成")
+    def _update_overall_progress(self) -> None:
+        """更新总进度条"""
+        self._overall_progress.update(
+            self._overall_task_id,
+            total=len(self._download_progress.tasks),
+            completed=len(self._download_progress.tasks) - len(self._active_tasks),
+            visible=bool(self._download_progress.tasks),
+        )
 
     def __enter__(self):
-        self.start()
+        self._live.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
+        self._live.stop()
