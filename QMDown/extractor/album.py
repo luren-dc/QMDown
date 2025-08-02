@@ -1,9 +1,10 @@
-from typing_extensions import override
+from typing import final, override
 
-from QMDown import api
+from QMDown.api import album as api
 from QMDown.extractor._abc import BatchExtractor
 
 
+@final
 class AlbumExtractor(BatchExtractor):
     _VALID_URL = (
         r"https?://y\.qq\.com/n/ryqq/albumDetail/(?P<id>[0-9A-Za-z]+)",
@@ -12,11 +13,9 @@ class AlbumExtractor(BatchExtractor):
 
     @override
     async def extract(self, url: str):
-        id = self._match_id(url)
-        try:
-            detail = await api.get_album_detail(id=int(id))
-        except ValueError:
-            detail = await api.get_album_detail(mid=id)
-
-        self.report_info(f"获取成功: {id} {detail.info.name}")
-        return detail.songs
+        album_id = self._match_id(url)
+        if album_id.isdigit():
+            album_id = int(album_id)
+        info = await api.get_detail(album_id)
+        self.print(f"专辑信息获取成功:[red]{info['basicInfo']['albumName']}")
+        return await api.get_song(album_id, 1000)

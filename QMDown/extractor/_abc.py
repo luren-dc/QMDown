@@ -1,16 +1,17 @@
-import logging
 import re
 from abc import ABC, abstractmethod
+from re import Pattern
+from typing import Any, override
+
+from rich.console import Console
 
 from QMDown import console
-from QMDown.models import Song
-
-logger = logging.getLogger("extractor")
 
 
 class Extractor(ABC):
-    _VALID_URL: tuple | None = None
-    _console = console
+    _VALID_URL_RE: tuple[Pattern[str], ...]
+    _VALID_URL: tuple[str, ...] | None = None
+    _console: Console = console
 
     @classmethod
     def _match_valid_url(cls, url: str):
@@ -21,7 +22,7 @@ class Extractor(ABC):
         return next(filter(None, (regex.match(url) for regex in cls._VALID_URL_RE)), None)
 
     @classmethod
-    def suitable(cls, url):
+    def suitable(cls, url: str) -> bool:
         return cls._match_valid_url(url) is not None
 
     @classmethod
@@ -31,27 +32,22 @@ class Extractor(ABC):
         raise ValueError("Url invalid")
 
     @abstractmethod
-    async def extract(self, url: str):
+    async def extract(self, url: str) -> dict[str, Any] | list[dict[str, Any]] | None:  # pyright: ignore[reportExplicitAny]
         raise NotImplementedError
 
-    def report_info(self, msg: str):
-        logger.info(
-            f"[blue bold][{self.__class__.__name__}][/] {msg}",
-        )
-
-    def report_error(self, msg: str):
-        logger.error(
-            f"[blue bold][{self.__class__.__name__}][/] {msg}",
-        )
+    def print(self, *args: Any):  # pyright: ignore[reportExplicitAny, reportAny]
+        self._console.print(f"[[green]{self.__class__.__name__}[/]]", *args)
 
 
-class SingleExtractor(Extractor):
+class SingleExtractor(Extractor, ABC):
     @abstractmethod
-    async def extract(self, url: str) -> Song | None:
+    @override
+    async def extract(self, url: str) -> dict[str, Any] | None:  # pyright: ignore[reportExplicitAny]
         raise NotImplementedError
 
 
-class BatchExtractor(Extractor):
+class BatchExtractor(Extractor, ABC):
     @abstractmethod
-    async def extract(self, url: str) -> list[Song] | None:
+    @override
+    async def extract(self, url: str) -> list[dict[str, Any]] | None:  # pyright: ignore[reportExplicitAny]
         raise NotImplementedError

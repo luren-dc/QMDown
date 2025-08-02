@@ -1,16 +1,16 @@
 from asyncio import Lock
 from typing import ClassVar
 
-from QMDown import console
 from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import BarColumn, DownloadColumn, Progress, SpinnerColumn, TaskID, TextColumn, TransferSpeedColumn
 from rich.table import Column
 
+from QMDown import console
+
 
 class DownloadProgress:
-
     DEFAULT_COLUMNS: ClassVar = {
         "description": TextColumn(
             "{task.description}[bold blue]{task.fields[filename]}",
@@ -91,9 +91,9 @@ class DownloadProgress:
                 "description": description,
                 "visible": visible,
             }
-            
+
             self._download_progress.update(task_id, **update_kwargs)
-            
+
             if self._download_progress.tasks[task_id].finished:
                 self._active_tasks.discard(task_id)
                 self._update_overall_progress()

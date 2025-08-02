@@ -20,7 +20,7 @@
 ---
 
 > [!NOTE]
-> 作者学业繁忙，main 分支暂不可用
+> 重构中
 
 **欢迎向本项目提出[Issues](https://github.com/luren-dc/QMDown/issues),贡献[Pull Requests](https://github.com/luren-dc/QMDown/pulls)**
 
@@ -81,13 +81,13 @@ uv tool install git+https://github.com/luren-dc/QMDown.git@main
 
 ### 已支持下载类型
 
-| 类型   | 示例链接                                                                                                                             |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| base   | `https://c6.y.qq.com/base/fcgi-bin/u?__=jXIuFz8tBzpA`                                                                                |
+| 类型   | 示例链接                                                                                                                                 |
+|------|--------------------------------------------------------------------------------------------------------------------------------------|
+| base | `https://c6.y.qq.com/base/fcgi-bin/u?__=jXIuFz8tBzpA`                                                                                |
 | 歌曲   | `https://y.qq.com/n/ryqq/songDetail/004Ti8rT003TaZ` <br/> `https://i.y.qq.com/v8/playsong.html?songmid=004UMhHW33BWSk`               |
 | 歌单   | `https://y.qq.com/n/ryqq/playlist/1374105607` <br/> `https://i.y.qq.com/n2/m/share/details/taoge.html?id=7524170477`                 |
 | 专辑   | `https://y.qq.com/n/ryqq/albumDetail/003dYC933CfoSi` <br/> `https://i.y.qq.com/n2/m/share/details/album.html?albumId=50967596`       |
-| 排行榜 | `https://y.qq.com/n/ryqq/toplist/3` <br/> `https://i.y.qq.com/n2/m/share/details/toplist.html?id=26`                                 |
+| 排行榜  | `https://y.qq.com/n/ryqq/toplist/3` <br/> `https://i.y.qq.com/n2/m/share/details/toplist.html?id=26`                                 |
 | 歌手   | `https://y.qq.com/n/ryqq/singer/001BLpXF2DyJe2` <br/> `https://i.y.qq.com/n2/m/share/profile_v2/index.html?singermid=0025NhlN2yWrP4` |
 
 ## 基本使用
@@ -140,8 +140,8 @@ Usage: QMDown [OPTIONS] URLS...
 <details>
 <summary>点击展开</summary>
 
-| 音频格式 | code |
-| -------- | ---- |
+| 音频格式     | code |
+|----------|------|
 | MASTER   | 130  |
 | ATMOS_2  | 120  |
 | ATMOS_51 | 110  |

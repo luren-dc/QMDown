@@ -1,9 +1,12 @@
+from typing import final
+
 from typing_extensions import override
 
-from QMDown import api
+from QMDown.api import singer as api
 from QMDown.extractor._abc import BatchExtractor
 
 
+@final
 class SingerExtractor(BatchExtractor):
     _VALID_URL = (
         r"https?://y\.qq\.com/n/ryqq/singer/(?P<id>[0-9A-Za-z]+)",
@@ -12,7 +15,8 @@ class SingerExtractor(BatchExtractor):
 
     @override
     async def extract(self, url: str):
-        id = self._match_id(url)
-        singer = await api.get_singer_detail(id)
-        self.report_info(f"获取成功: {id} {singer.name}")
-        return singer.songs
+        singer_id = self._match_id(url)
+        info = await api.get_info(singer_id)
+        songs = await api.get_songs_list_all(singer_id)
+        self.print(f"歌手信息获取成功: [red]{info['Info']['Singer']['Name']}")
+        return songs

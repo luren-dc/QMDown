@@ -1,9 +1,10 @@
-from typing_extensions import override
+from typing import final, override
 
-from QMDown import api
+from QMDown.api import song as api
 from QMDown.extractor._abc import SingleExtractor
 
 
+@final
 class SongExtractor(SingleExtractor):
     _VALID_URL = (
         r"https?://y\.qq\.com/n/ryqq/songDetail/(?P<id>[0-9A-Za-z]+)",
@@ -12,10 +13,7 @@ class SongExtractor(SingleExtractor):
 
     @override
     async def extract(self, url: str):
-        id = self._match_id(url)
-        try:
-            song = (await api.query([int(id)]))[0]
-        except ValueError:
-            song = (await api.query([id]))[0]
-        self.report_info(f"获取成功: {id} {song.get_full_name()}")
-        return song
+        song_id = self._match_id(url)
+        if song_id.isdigit():
+            song_id = int(song_id)
+        return (await api.query_song([song_id]))[0]  # pyright: ignore[reportArgumentType]
